@@ -1,0 +1,3 @@
+class BuyRequest {
+    BuyRequest() {}
+}
