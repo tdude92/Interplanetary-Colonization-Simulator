@@ -9,8 +9,8 @@ class CargoShip {
     CargoShip(Resource resourceType, PlanetCell origin, PlanetCell dest) {
         this.resourceType = resourceType;
         this.dest = dest;
-        this.destPos = Vec2f(dest.x, dest.y);
-        this.pos = Vec2f(origin.x, origin.y);
+        this.destPos = new Vec2f(dest.x, dest.y);
+        this.pos = new Vec2f(origin.x, origin.y);
     }
 
     void update() {
