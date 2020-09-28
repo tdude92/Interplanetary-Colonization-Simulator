@@ -2,12 +2,12 @@
 final int FRAME_RATE = 30;
 final int GRID_WIDTH = 400;
 final int PLANET_MIN_R = 3;
-final int PLANET_MAX_R = 7;                 // Minimum and maximum radius of a planet.
-final int N_PLANETS = 20;                   // Number of planets to generate.
+final int PLANET_MAX_R = 6;                 // Minimum and maximum radius of a planet.
+final int N_PLANETS = 40;                   // Number of planets to generate.
 final int N_ADV_SHIFTS = 1;                // Number of times advantage factor values are shuffled. Try to keep between 0 & 5.
 final float TAX_RATE = 0.1;                 // PlanetCell tax revenue = population*TAX_RATE
 final float POP_GROWTH_RATE = 0.01;         // Yearly growth rate of PlanetCells.
-final float ITERS_PER_YR = 4;             // Iterations per year.
+final float ITERS_PER_YR = 2;             // Iterations per year.
 final float PLANETCELL_MAXPOP = 1000;       // Max number of population units per PlanetCell.
 static final float CARGOSHIP_CAPACITY = 10;   // Number of resource units a CargoShip can carry.
 static final float CARGOSHIP_SPEED = 1;     // The number of cells a CargoShip can travel in one loop iteration.
@@ -112,6 +112,7 @@ void setup() {
 }
 
 void draw() {
+    //println(N_PLANETCELL);
     noStroke();
     for (Planet planet : planets)
         planet.update();
