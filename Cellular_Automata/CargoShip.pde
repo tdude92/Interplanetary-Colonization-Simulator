@@ -1,7 +1,4 @@
 class CargoShip {
-    static final int CAPACITY = CARGOSHIP_CAPACITY;
-    static final float SPEED  = CARGOSHIP_SPEED;
-
     Resource resourceType;
     Vec2f pos, destPos;
     PlanetCell dest;
