@@ -1,3 +1,5 @@
+// TODO: Determine planet radius for generation.
+
 class Planet {
     boolean populated;    // True if every PlanetCell on a planet object is populated.
     PlanetCell[][] cells; // Cells will be stored in a 2D array representing
@@ -66,8 +68,7 @@ class PlanetCell {
     float cash;
     float[] advFactors; // Advantage factors.
     float[] resourceStockpile;
-    float[] incomingShipments;
-    ArrayList<BuyRequest> launchBacklog;
+    ArrayList<BuyRequest> launchBacklog = new ArrayList<BuyRequest>();
 
     PlanetCell(int x, int y, Planet planet) {
         this.id = N_PLANETCELL++;
@@ -79,26 +80,23 @@ class PlanetCell {
 
         this.population = 0;
         this.cash = 0;
-        this.launchBacklog = new ArrayList<BuyRequest>();
 
-        this.resourceStockpile = new float[Resource.COUNT];
-        this.incomingShipments = new float[Resource.COUNT]; // So the object knows how much resources are on the way.
-        this.advFactors = new float[Resource.COUNT];        // Resource production multipliers.
-        for (int i = 0; i < Resource.COUNT; ++i) {
+        this.resourceStockpile = new float[N_RESOURCES];
+        this.advFactors = new float[N_RESOURCES];        // Resource production multipliers.
+        for (int i = 0; i < N_RESOURCES; ++i) {
             // Initialize array fields.
             this.resourceStockpile[i] = 0;
-            this.incomingShipments[i] = 0;
             this.advFactors[i] = 1;
         }
 
         // Set advantage factors.
         for (int i = 0; i < N_ADV_SHIFTS; ++i) {
             int res1;
-            int res2 = int(random(0, Resource.COUNT));
+            int res2 = int(random(0, N_RESOURCES));
 
             do {
                 // Sample a resource index until res1 != res2.
-                res1 = int(random(0, Resource.COUNT));
+                res1 = int(random(0, N_RESOURCES));
             } while (res1 == res2);
 
             // A population unit is able to provide for itself if it can produce
@@ -111,33 +109,34 @@ class PlanetCell {
         }
     }
 
-    // TODO: Implement methods.
     void update() {
         if (this.population > 0) { // Don't update uninhabited cells
-            // 1. Place buy orders.
-            for (int i = 0; i < Resource.COUNT; ++i) {
-                if (this.resourceStockpile[i] + this.incomingShipments[i] < 0) {
+            // 1. Apply natural disaster/innovation effects.
+            
+            /*// 2. Place buy orders.
+            for (int i = 0; i < N_RESOURCES; ++i) {
+                if (this.resourceStockpile[i] < 0) {
                     float price = marketPrices[i];
+                    int neededShipments = ceil(abs(this.resourceStockpile[i])/CARGOSHIP_CAPACITY);
                     for (PlanetCell seller : planetCells) {
                         if (seller.resourceStockpile[i] > CARGOSHIP_CAPACITY) { // Must be able to send at least one shipment.
-                            float needed = abs(this.resourceStockpile[i] + this.incomingShipments[i]);
                             int nShipments = int(seller.resourceStockpile[i]/CARGOSHIP_CAPACITY);
                             
                             // Make sure this object is able to afford nShipments of the resource.
                             nShipments = min(nShipments, int(this.cash/price));
 
                             // Make sure this object is only buying as much as it needs.
-                            nShipments = min(nShipments, ceil(needed/CARGOSHIP_CAPACITY));
+                            nShipments = min(nShipments, neededShipments);
+                            
                             seller.sell(this, i, nShipments);
-
-                            this.incomingShipments[i] += nShipments*CARGOSHIP_CAPACITY;
+                            neededShipments -= nShipments;
                         }
 
-                        if (this.resourceStockpile[i] + this.incomingShipments[i] > 0)
+                        if (neededShipments < 0)
                             break;
                     }
                 }
-            }
+            }*/
 
             // 2. Update population
             // Population growth
@@ -162,15 +161,49 @@ class PlanetCell {
             // Calculate tax revenue.
             this.cash += this.population*TAX_RATE*(1/ITERS_PER_YR);
             
-            // 3. Calculate net change in resource stockpiles.
+            // 3. Calculate net change in resource stockpiles and place buy requests.
             for (int i = 0; i < this.resourceStockpile.length; ++i) {
-                this.resourceStockpile[i] += (this.advFactors[i]*this.population - this.population)*(1/ITERS_PER_YR);
+                float change = (this.advFactors[i]*this.population - this.population)*(1/ITERS_PER_YR);
+                this.resourceStockpile[i] += change;
+                
+                if (change < 0) {
+                    // Import goods to relieve shortages.
+                    float price = marketPrices[i];
+                    int neededShipments = ceil(abs(change)/CARGOSHIP_CAPACITY);
+                    for (PlanetCell seller : planetCells) {
+                        if (seller.resourceStockpile[i] > CARGOSHIP_CAPACITY) { // Must be able to send at least one shipment.
+                            int nShipments = int(seller.resourceStockpile[i]/CARGOSHIP_CAPACITY);
+                            
+                            // Make sure this object is able to afford nShipments of the resource.
+                            nShipments = min(nShipments, int(this.cash/price));
+
+                            // Make sure this object is only buying as much as it needs.
+                            nShipments = min(nShipments, neededShipments);
+                            
+                            seller.sell(this, i, nShipments);
+                            neededShipments -= nShipments;
+                        }
+
+                        if (neededShipments < 0)
+                            break;
+                    }
+                }
             }
 
             // 4. Update global market variables.
             totalCash += this.cash;
-            for (int i = 0; i < Resource.COUNT; ++i)
+            for (int i = 0; i < N_RESOURCES; ++i)
                 totalStock[i] += clamp(this.resourceStockpile[i], 0, Float.MAX_VALUE);
+            
+            // 5. Launch ships from launchBacklog
+            for (BuyRequest br : launchBacklog) {
+                for (int i = 0; i < N_RESOURCES; ++i) {
+                    if (br.nShipments[i] > 0) {
+                        cargoShips.add(new CargoShip(i, br.seller, br.buyer));
+                        br.nShipments[i] -= 1;
+                    }
+                }
+            }
         }
         this.draw();
     }
@@ -184,15 +217,30 @@ class PlanetCell {
         this.resourceStockpile[resourceIdx] -= nShipments*CARGOSHIP_CAPACITY;
 
         // Schedule launch into launchBacklog.
-        boolean found = false; // Set to true if an existing entry was found for buyer.
+        ArrayList<BuyRequest> emptyBR = new ArrayList<BuyRequest>(); // Store empty BuyRequests for deletion.
+        boolean found = false; // Set to true if a BuyRequest exists for the buyer.
         for (BuyRequest br : launchBacklog) {
             if (br.buyer == buyer) {
-                br.nShipments += nShipments;
+                br.nShipments[resourceIdx] += nShipments;
                 found = true;
             }
+            
+            int totalShipments = 0;
+            for (int i = 0; i < N_RESOURCES; ++i) {
+                totalShipments += br.nShipments[i];
+            }
+            if (totalShipments == 0)
+                emptyBR.add(br);
         }
-        if (!found)
-            launchBacklog.add(new BuyRequest(this, buyer, nShipments, resourceIdx));
+        if (!found) {
+            BuyRequest br = new BuyRequest(this, buyer);
+            br.nShipments[resourceIdx] += nShipments;
+            launchBacklog.add(br);
+        }
+        
+        // Delete empty BuyRequests
+        for (BuyRequest br : emptyBR)
+            launchBacklog.remove(br);
     }
 
     void draw() {

@@ -26,6 +26,10 @@ class Vec2f {
         return new Vec2f(this.x - v.x, this.y - v.y);
     }
     
+    Vec2f mult(Vec2f v) {
+        return new Vec2f(v.x*this.x, v.y*this.y);
+    }
+    
     Vec2f cMult(float c) {
         return new Vec2f(c*this.x, c*this.y);
     }

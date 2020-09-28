@@ -1,12 +1,13 @@
 class BuyRequest {
     PlanetCell buyer, seller;
-    int nShipments, resourceIdx;
-    BuyRequest(PlanetCell seller, PlanetCell buyer, int nShipments, int resourceIdx) {
+    int[] nShipments, resourceIdx;
+    BuyRequest(PlanetCell seller, PlanetCell buyer) {
         this.buyer = buyer;
         this.seller = seller;
-        this.nShipments = nShipments;
-        this.resourceIdx = resourceIdx;
+        
+        this.nShipments = new int[N_RESOURCES];
+        for (int i = 0; i < this.nShipments.length; ++i) {
+            this.nShipments[i] = 0;
+        }
     }
-
-    void launchShipment() {}
 }
