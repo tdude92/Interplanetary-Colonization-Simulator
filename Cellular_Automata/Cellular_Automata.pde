@@ -4,18 +4,20 @@ final int GRID_WIDTH = 100;
 final int PLANET_MIN_R = 2;
 final int PLANET_MAX_R = 4;                 // Minimum and maximum radius of a planet.
 final int N_PLANETS = 10;                   // Number of planets to generate.
-final int N_ADV_SHIFTS = 1;                // Number of times advantage factor values are shuffled. Try to keep between 0 & 5.
-final float TAX_RATE = 0.1;                 // PlanetCell tax revenue = population*TAX_RATE
+final int N_ADV_SHIFTS = 3;                // Number of times advantage factor values are shuffled. Try to keep between 0 & 5.
 final float POP_GROWTH_RATE = 0.01;         // Yearly growth rate of PlanetCells.
-final float ITERS_PER_YR = 2;             // Iterations per year.
+final float STARTING_EFFICIENCY = 1;
+final float ITERS_PER_YR = 10;             // Iterations per year.
 final float PLANETCELL_MAXPOP = 1000;       // Max number of population units per PlanetCell.
 static final float CARGOSHIP_CAPACITY = 100;   // Number of resource units a CargoShip can carry.
 static final float CARGOSHIP_SPEED = 1;     // The number of cells a CargoShip can travel in one loop iteration.
 final color[] RESOURCE_COLORS = {
-    color(0, 255, 0), // FOOD
-    color(0, 0, 255), // WATER
-    color(0, 255, 255), // ENERGY
-    color(255, 0, 0)  // RAW_MATERIALS
+    color(128, 128, 128),
+    color(128, 128, 128)
+    //color(0, 255, 0), // FOOD
+    //color(0, 0, 255), // WATER
+    //color(0, 255, 255), // ENERGY
+    //color(255, 0, 0)  // RAW_MATERIALS
 };
 final int N_RESOURCES = RESOURCE_COLORS.length;
 
@@ -28,33 +30,12 @@ int N_PLANETCELL = 0;                                            // Track number
 float CELL_WIDTH, CELL_HEIGHT;
 
 PlanetCell[] planetCells;                                        // Store all PlanetCells. Used to grab PlanetCells with an ID.
-float totalCash = 0;                                             // Total money in the universe.
-float[] totalStock = new float[N_RESOURCES];                  // Total resource for sale on the market.
-float[] marketPrices = new float[N_RESOURCES];
+
+// Graphable global vars.
 
 // UTILITY FUNCTIONS
 float clamp(float x, float min, float max) {
     return max(min(x, max), min);
-}
-
-void computeMarketPrices() {
-    // TODO: Write comment explaining this.
-    for (int i = 0; i < N_RESOURCES; ++i) {
-        if (totalStock[i] > 0) {
-            marketPrices[i] = (totalCash/5) / totalStock[i];
-            marketPrices[i] *= CARGOSHIP_CAPACITY; // So that marketPrices price per shipment.
-        } else {
-            marketPrices[i] = Float.NaN;
-        }
-    }
-
-    // Reset values of totalCash and totalStock
-    // since their values are calculated by
-    // finding the sum of the total cash and resource
-    // stock of each PlanetCell.
-    totalCash = 0;
-    for (int i = 0; i < N_RESOURCES; ++i)
-        totalStock[i] = 0;
 }
 
 void updateCargoShips() {
@@ -121,10 +102,6 @@ void setup() {
             }
         }
     }
-
-    // Initialize totalStock
-    for (int i = 0; i < N_RESOURCES; ++i)
-        totalStock[i] = 0;
     
     // TODO: Update .seed() to only seed a couple cells?
     //planets[0].seed();
@@ -136,20 +113,10 @@ void draw() {
     updateCargoShips();
     for (Planet planet : planets)
         planet.update();
-    println(totalCash);
-    printArray(totalStock);
-    //println();
-    
-    computeMarketPrices();
-    
-    //printArray(marketPrices);
-    //println();
 
-    //println(planets[0].cells[5][5].population);
-    //printArray(planets[0].cells[5][5].resourceStockpile);
+    println(planets[4].cells[2][2].population);
+    printArray(planets[4].cells[2][2].resourceStockpile);
     //println(N_PLANETCELL);
-    //println(cargoShips.size());
 
-    //println(planets[0].cells[2][2].cash);
     println();
 }

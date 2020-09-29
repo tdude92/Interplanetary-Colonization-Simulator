@@ -65,7 +65,6 @@ class PlanetCell {
     int id;
     int x, y;
     float population;
-    float cash;
     float[] advFactors; // Advantage factors.
     float[] resourceStockpile;
     ArrayList<BuyRequest> launchBacklog = new ArrayList<BuyRequest>();
@@ -79,14 +78,13 @@ class PlanetCell {
         this.planet = planet;
 
         this.population = 0;
-        this.cash = 0;
 
         this.resourceStockpile = new float[N_RESOURCES];
         this.advFactors = new float[N_RESOURCES];        // Resource production multipliers.
         for (int i = 0; i < N_RESOURCES; ++i) {
             // Initialize array fields.
             this.resourceStockpile[i] = 0;
-            this.advFactors[i] = 1;
+            this.advFactors[i] = STARTING_EFFICIENCY;
         }
 
         // Set advantage factors.
@@ -113,34 +111,12 @@ class PlanetCell {
         if (this.population > 0) { // Don't update uninhabited cells
             // 1. Apply natural disaster/innovation effects.
             
-            /*// 2. Place buy orders.
-            for (int i = 0; i < N_RESOURCES; ++i) {
-                if (this.resourceStockpile[i] < 0) {
-                    float price = marketPrices[i];
-                    int neededShipments = ceil(abs(this.resourceStockpile[i])/CARGOSHIP_CAPACITY);
-                    for (PlanetCell seller : planetCells) {
-                        if (seller.resourceStockpile[i] > CARGOSHIP_CAPACITY) { // Must be able to send at least one shipment.
-                            int nShipments = int(seller.resourceStockpile[i]/CARGOSHIP_CAPACITY);
-                            
-                            // Make sure this object is able to afford nShipments of the resource.
-                            nShipments = min(nShipments, int(this.cash/price));
-
-                            // Make sure this object is only buying as much as it needs.
-                            nShipments = min(nShipments, neededShipments);
-                            
-                            seller.sell(this, i, nShipments);
-                            neededShipments -= nShipments;
-                        }
-
-                        if (neededShipments < 0)
-                            break;
-                    }
-                }
-            }*/
-
             // 2. Update population
             // Population growth
-            this.population += POP_GROWTH_RATE*(1/ITERS_PER_YR)*this.population;
+            if (this.population < 1000)
+                this.population += POP_GROWTH_RATE*(1/ITERS_PER_YR)*this.population;
+            else
+                this.population = 1000;
 
             // Find shortages & greatest shortage & reset values to zero.
             float greatestShortage = 0;
@@ -157,30 +133,23 @@ class PlanetCell {
             // If population is under 1, round to 0
             if (this.population < 1)
                 this.population = 0;
-            
-            // Calculate tax revenue.
-            this.cash += this.population*TAX_RATE*(1/ITERS_PER_YR);
-            
-            // 3. Calculate net change in resource stockpiles and place buy requests.
+
+            // 3. Calculate net change in resource stockpiles, revenue, and place buy requests.
             for (int i = 0; i < this.resourceStockpile.length; ++i) {
                 float change = (this.advFactors[i]*this.population - this.population)*(1/ITERS_PER_YR);
                 this.resourceStockpile[i] += change;
                 
                 if (change < 0) {
                     // Import goods to relieve shortages.
-                    float price = marketPrices[i];
                     int neededShipments = ceil(abs(change)/CARGOSHIP_CAPACITY);
-                    for (PlanetCell seller : planetCells) {
-                        if (seller.resourceStockpile[i] > CARGOSHIP_CAPACITY) { // Must be able to send at least one shipment.
-                            int nShipments = int(seller.resourceStockpile[i]/CARGOSHIP_CAPACITY);
-                            
-                            // Make sure this object is able to afford nShipments of the resource.
-                            nShipments = min(nShipments, int(this.cash/price));
+                    for (PlanetCell sender : planetCells) {
+                        if (sender.resourceStockpile[i] > CARGOSHIP_CAPACITY) { // Must be able to send at least one shipment.
+                            int nShipments = int(sender.resourceStockpile[i]/CARGOSHIP_CAPACITY);
 
-                            // Make sure this object is only buying as much as it needs.
+                            // Make sure this object is only requesting as much as it needs.
                             nShipments = min(nShipments, neededShipments);
                             
-                            seller.sell(this, i, nShipments);
+                            sender.sell(this, i, nShipments);
                             neededShipments -= nShipments;
                         }
 
@@ -189,17 +158,12 @@ class PlanetCell {
                     }
                 }
             }
-
-            // 4. Update global market variables.
-            totalCash += this.cash;
-            for (int i = 0; i < N_RESOURCES; ++i)
-                totalStock[i] += clamp(this.resourceStockpile[i], 0, Float.MAX_VALUE);
             
-            // 5. Launch ships from launchBacklog
+            // 4. Launch ships from launchBacklog
             for (BuyRequest br : launchBacklog) {
                 for (int i = 0; i < N_RESOURCES; ++i) {
                     if (br.nShipments[i] > 0) {
-                        cargoShips.add(new CargoShip(i, br.seller, br.buyer));
+                        cargoShips.add(new CargoShip(i, br.sender, br.receiver));
                         br.nShipments[i] -= 1;
                     }
                 }
@@ -208,19 +172,15 @@ class PlanetCell {
         this.draw();
     }
 
-    void sell(PlanetCell buyer, int resourceIdx, int nShipments) {
-        // Transfer money from buyer to seller.
-        buyer.cash -= nShipments*marketPrices[resourceIdx];
-        this.cash  += nShipments*marketPrices[resourceIdx];
-        
+    void sell(PlanetCell receiver, int resourceIdx, int nShipments) {
         // Set aside resources for shipment.
         this.resourceStockpile[resourceIdx] -= nShipments*CARGOSHIP_CAPACITY;
 
         // Schedule launch into launchBacklog.
         ArrayList<BuyRequest> emptyBR = new ArrayList<BuyRequest>(); // Store empty BuyRequests for deletion.
-        boolean found = false; // Set to true if a BuyRequest exists for the buyer.
+        boolean found = false; // Set to true if a BuyRequest exists for the receiver.
         for (BuyRequest br : launchBacklog) {
-            if (br.buyer == buyer) {
+            if (br.receiver == receiver) {
                 br.nShipments[resourceIdx] += nShipments;
                 found = true;
             }
@@ -233,7 +193,7 @@ class PlanetCell {
                 emptyBR.add(br);
         }
         if (!found) {
-            BuyRequest br = new BuyRequest(this, buyer);
+            BuyRequest br = new BuyRequest(this, receiver);
             br.nShipments[resourceIdx] += nShipments;
             launchBacklog.add(br);
         }

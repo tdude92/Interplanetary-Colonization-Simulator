@@ -42,6 +42,6 @@ class CargoShip {
     
     void draw() {
         fill(RESOURCE_COLORS[this.resourceIdx]);
-        rect(this.x*CELL_WIDTH, this.y*CELL_HEIGHT, CELL_WIDTH/2, CELL_HEIGHT/2);
+        rect(this.x*CELL_WIDTH + CELL_WIDTH/4, this.y*CELL_HEIGHT + CELL_WIDTH/4, CELL_WIDTH/2, CELL_HEIGHT/2);
     }
 }

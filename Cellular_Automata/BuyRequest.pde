@@ -1,9 +1,9 @@
 class BuyRequest {
-    PlanetCell buyer, seller;
+    PlanetCell receiver, sender;
     int[] nShipments, resourceIdx;
-    BuyRequest(PlanetCell seller, PlanetCell buyer) {
-        this.buyer = buyer;
-        this.seller = seller;
+    BuyRequest(PlanetCell sender, PlanetCell receiver) {
+        this.receiver = receiver;
+        this.sender = sender;
         
         this.nShipments = new int[N_RESOURCES];
         for (int i = 0; i < this.nShipments.length; ++i) {
