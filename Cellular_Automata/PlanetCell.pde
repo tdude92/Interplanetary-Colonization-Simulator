@@ -134,7 +134,7 @@ class PlanetCell {
             if (this.population < 1)
                 this.population = 0;
 
-            // 3. Calculate net change in resource stockpiles, revenue, and place buy requests.
+            // 3. Calculate net change in resource stockpiles and place buy requests.
             for (int i = 0; i < this.resourceStockpile.length; ++i) {
                 float change = (this.advFactors[i]*this.population - this.population)*(1/ITERS_PER_YR);
                 this.resourceStockpile[i] += change;
