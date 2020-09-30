@@ -1,20 +1,21 @@
+// SHARING IS CARING!
+
 // CONSTANTS
 final int FRAME_RATE = 30;
-final int GRID_WIDTH = 200;
-final int PLANET_MIN_R = 3;
-final int PLANET_MAX_R = 6;
-final int N_PLANETS = 10;
-final int EFFICIENCY_VARIATIONS = 4;
-final int IMPORT_EVERY = 5;
-final float POP_GROWTH_RATE = 0.1;
-final float STARTING_EFFICIENCY = 1.1;
-final float ITERS_PER_YR = 5;
+final int GRID_WIDTH = 400;
+final int PLANET_MIN_R = 2;                  // Minimum radius
+final int PLANET_MAX_R = 7;                  // Maximum radius
+final int N_PLANETS = 20;
+final int EFFICIENCY_VARIATIONS = 4;         // Number of times to shuffle around production multiplier values (Higher value means PlanetCells are more varied in output multipliers).
+final float POP_GROWTH_RATE = 0.1;           // Per year
+final float STARTING_EFFICIENCY = 1.1;       // The starting value for production multipliers before applying swaps (from EFFICIENCY_VARIATIONS)
+final float ITERS_PER_YR = 4;                // How many iterations amounts to a year.
 final float PLANETCELL_MAXPOP = 1000;
-final float EMIGRATION_POP = 300;
-final float N_EMIGRANTS = 20;
-final float INTRA_EMIGRATION_CHANCE = 0.05;
-final float INTER_EMIGRATION_CHANCE = 0.01;
-final color[] RESOURCE_COLORS = {
+final float EMIGRATION_POP = 300;            // Minimum population of a PlanetCell for emigration to occur.
+final float N_EMIGRANTS = 20;                // Number of emigrants per ColonyShip
+final float INTRA_EMIGRATION_CHANCE = 0.05;  // Chance for intraplanetary emigration.
+final float INTER_EMIGRATION_CHANCE = 0.005; // Chance for interplanetary emigration to occur if intraplanetery emigration fails (due to every cell being populated)
+final color[] RESOURCE_COLORS = {            
     color(0, 128, 0), // FOOD
     color(0, 0, 128), // WATER
     color(0, 128, 128), // ENERGY
@@ -23,21 +24,19 @@ final color[] RESOURCE_COLORS = {
 final int N_RESOURCES = RESOURCE_COLORS.length;
 
 // Global Variables
-long ITER_CTR = 0; // Used to space out imports (import every n iters rather than every one).
+long ITER_CTR = 0; // TODO: DELETE THIS
 float CELL_WIDTH, CELL_HEIGHT;
 ArrayList<CargoShip> cargoShips = new ArrayList<CargoShip>();
-ArrayList<CargoShip> landedCargoShips = new ArrayList<CargoShip>();
+ArrayList<CargoShip> landedCargoShips = new ArrayList<CargoShip>();  // List of CargoShips to delete after updating each element of cargoShips
 Planet[] planets = new Planet[N_PLANETS];
 PlanetCell[] planetCells;
 
-// Graphable global vars
-
 // Utility functions
 float clamp(float x, float min, float max) {
+    // Clamp x between min and max.
     return max(min(x, max), min);
 }
 
-// TODO: BETTER SEED ALGORITHMS
 void seedMooreNeighbourhood(PlanetCell[] cells) {
     // Add population to a PlanetCell and its Moore neighbourhood.
     PlanetCell center = cells[int(random(N_PLANETCELL))];
@@ -92,7 +91,7 @@ void setup() {
         // Find distance to closest planet.
         // The maximum radius of this planet will be
         // half of this distance to ensure that there
-        // are no overlaps.
+        // will be minimal overlaps.
         int minDist = Integer.MAX_VALUE;
         for (int j = 0; j < N_PLANETS; ++j) {
             // Check distance to every other planet to find smallest distance.
@@ -109,7 +108,7 @@ void setup() {
         planets[i] = new Planet(x, y, radius);
     }
 
-    // Initialize planetCells
+    // Initialize planetCells array
     planetCells = new PlanetCell[N_PLANETCELL];
     for (Planet planet : planets) {
         for (int i = 0; i < planet.cells.length; ++i) {
@@ -130,9 +129,4 @@ void draw() {
     updateCargoShips();
     for (PlanetCell cell : planetCells)
         cell.update();
-    
-    //println(planetCells[100].population);
-    //printArray(planetCells[100].resourceStockpile);
-    //println(ITER_CTR++, cargoShips.size());
-    //println();
 }

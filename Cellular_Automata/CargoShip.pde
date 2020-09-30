@@ -57,17 +57,21 @@ class CargoShip {
 }
 
 class ColonyShip extends CargoShip {
+    // Extends CargoShip so that both CargoShip and ColonyShip can be
+    // stored in the global ArrayList<CargoShip>.
+  
     ColonyShip(PlanetCell origin, PlanetCell dest) {
         super(-1, origin, dest);
     }
     
     void land() {
+        // CargoShip.land() is overriden because ColonyShips add population rather than resources.
         landedCargoShips.add(this);
         this.dest.population += N_EMIGRANTS;
     }
     
     void draw() {
-        fill(255, 255, 128);
+        fill(200, 200, 100);
         rect(this.x*CELL_WIDTH, this.y*CELL_HEIGHT + CELL_WIDTH, CELL_WIDTH, CELL_HEIGHT);
     }
 }

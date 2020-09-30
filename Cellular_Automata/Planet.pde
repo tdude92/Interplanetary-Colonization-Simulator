@@ -2,7 +2,7 @@ class Planet {
     PlanetCell[][] cells; // Cells will be stored in a 2D array representing
                           // the bounding square of the circular planet.
                           // PlanetCells will be generated in a filled circle
-                          // around the center of the 2D array.
+                          // around the approximate center of the 2D array.
                           
     Planet(int centerX, int centerY, int radius) {
         // Generate PlanetCells.
@@ -13,10 +13,10 @@ class Planet {
         // This is done by comparing the Euclidean distance between 
         // each cell and the centerpoint and comparing it to the radius.
         for (int i = 0; i < this.cells.length; ++i) {
-            int y = (centerY - radius + 1) + i; // Get y-coord of cell
+            int y = (centerY - (radius - 1)) + i; // Get y-coord of cell
 
             for (int j = 0; j < this.cells.length; ++j) {
-                int x = (centerX - radius + 1) + j; // Get y-coord of cell
+                int x = (centerX - (radius - 1)) + j; // Get y-coord of cell
                 
                 // Check if distance from center <= radius.
                 float distFromCenter = sqrt((float)pow(x - centerX, 2) + (float)pow(y - centerY, 2));
@@ -59,7 +59,9 @@ class PlanetCell{
     int id;
     int x, y;
     float population;
-    float[] advFactors; // Advantage factors.
+    
+    int[] shipmentInterval;                     // Counters for the approx. number of iterations between imports of each resources before shortages occur.
+    float[] advFactors;                         // Production multipliers. A multiplier that is <1 introduces the need for imports.
     float[] resourceStockpile;
     float[] netChange = new float[N_RESOURCES]; // Tracks net output/consumption of each resource. Used to calculate imports.
     
@@ -72,16 +74,18 @@ class PlanetCell{
 
         this.population = 0;
 
+        this.shipmentInterval = new int[N_RESOURCES];
         this.resourceStockpile = new float[N_RESOURCES];
         this.advFactors = new float[N_RESOURCES];        // Resource production multipliers.
         
         for (int i = 0; i < N_RESOURCES; ++i) {
             // Initialize array fields.
+            this.shipmentInterval[i] = 0;
             this.resourceStockpile[i] = 0;
             this.advFactors[i] = STARTING_EFFICIENCY;
         }
         
-        // Set advantage factors.
+        // Shuffle around production multiplier values.
         for (int i = 0; i < EFFICIENCY_VARIATIONS; ++i) {
             int res1;
             int res2 = int(random(0, N_RESOURCES));
@@ -96,10 +100,6 @@ class PlanetCell{
         }
     }
     
-    // TODO: Implement these.
-    void naturalDisaster() {}
-    void innovation() {}
-    
     void updatePopulation() {
         // Population growth
         if (this.population < PLANETCELL_MAXPOP)
@@ -107,7 +107,7 @@ class PlanetCell{
         else
             this.population = PLANETCELL_MAXPOP;
         
-        // Find shortages & greatest shortage & reset values to zero.
+        // Find shortages, greatest shortage, & reset negative values to zero.
         float greatestShortage = 0;
         for (int i = 0; i < this.resourceStockpile.length; ++i) {
             if (this.resourceStockpile[i] < greatestShortage) {
@@ -127,8 +127,8 @@ class PlanetCell{
     void emigrate() {
         // Travel to another nearby PlanetCell.
         // Only called if this.population > EMIGRATION_POP.
-        // Check home planet first for cells with cell.population < EMIGRATION_POP.
-        // If home planet is populated, find another planet.
+        // Check neighbours for any cells such that cell.population < EMIGRATION_POP.
+        // If no such neighbours are found, random chance to stay or emigrate to a random PlanetCell.
         
         ArrayList<PlanetCell> neighbours = new ArrayList<PlanetCell>();
         
@@ -152,6 +152,7 @@ class PlanetCell{
         }
 
         if (neighbours.size() > 0) {
+            // Pick random neighbour.
             neighbours.get(int(random(neighbours.size()))).population += N_EMIGRANTS;
             return;
         }
@@ -171,9 +172,12 @@ class PlanetCell{
     }
     
     void importResources() {
-        // Must be called after this.updateResources()
+        // Must be called after this.updateResources(), or else this.netChange will have incorrect values.
         for (int i = 0; i < this.resourceStockpile.length; ++i) {
-            if (this.netChange[i] < 0 && ITER_CTR % IMPORT_EVERY == 0) {
+            if (this.netChange[i] < 0 && shipmentInterval[i] <= 0) {
+                shipmentInterval[i] = floor(CargoShip.CAPACITY/abs(this.netChange[i])); // Compute number of iterations it takes to burn through one shipment.
+                                                                                        // Reset shipmentInterval[i] to this value.
+                
                 int neededShipments = ceil(abs(this.netChange[i])/CargoShip.CAPACITY);
                 for (PlanetCell sender : planetCells) {
                     if (sender.resourceStockpile[i] > CargoShip.CAPACITY) { // Check if there are sufficient resources.
@@ -182,15 +186,16 @@ class PlanetCell{
                     }
                     
                     if (neededShipments == 0) // POTENTIAL BUG: If neededShipments starts at 0, this won't run.
-                        break;
+                        break;                //                this shouldn't happen because of the ceil() in neededShipments.
                 }
             }
+            shipmentInterval[i] -= 1; // Count down one iteration if no imports are necessary for resource i.
         }
     }
     
     void drawCell() {
         if (this.population > 0) {
-            float colorVal = 255*this.population/PLANETCELL_MAXPOP;
+            float colorVal = 128 + 128*this.population/PLANETCELL_MAXPOP;
             fill(colorVal, colorVal, colorVal/2);
         } else {
             fill(140,48,8);
@@ -216,8 +221,6 @@ class PlanetCell{
     
     void update() {
         if (this.population > 0) { // Don't update uninhabited cells.
-            this.naturalDisaster();
-            this.innovation();
             this.updatePopulation();
             
             if (this.population > EMIGRATION_POP && random(0, 1) < INTRA_EMIGRATION_CHANCE) {
