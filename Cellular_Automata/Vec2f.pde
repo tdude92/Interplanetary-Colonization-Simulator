@@ -34,7 +34,3 @@ class Vec2f {
         return new Vec2f(c*this.x, c*this.y);
     }
 }
-
-void printVec2f(Vec2f v) {
-    println("[", v.x, ",", v.y, "]");
-}

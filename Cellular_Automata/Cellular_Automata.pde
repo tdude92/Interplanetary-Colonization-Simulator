@@ -1,41 +1,59 @@
 // CONSTANTS
 final int FRAME_RATE = 30;
-final int GRID_WIDTH = 100;
-final int PLANET_MIN_R = 2;
-final int PLANET_MAX_R = 4;                 // Minimum and maximum radius of a planet.
-final int N_PLANETS = 10;                   // Number of planets to generate.
-final int N_ADV_SHIFTS = 3;                // Number of times advantage factor values are shuffled. Try to keep between 0 & 5.
-final float POP_GROWTH_RATE = 0.01;         // Yearly growth rate of PlanetCells.
-final float STARTING_EFFICIENCY = 1;
-final float ITERS_PER_YR = 10;             // Iterations per year.
-final float PLANETCELL_MAXPOP = 1000;       // Max number of population units per PlanetCell.
-static final float CARGOSHIP_CAPACITY = 100;   // Number of resource units a CargoShip can carry.
-static final float CARGOSHIP_SPEED = 1;     // The number of cells a CargoShip can travel in one loop iteration.
+final int GRID_WIDTH = 200;
+final int PLANET_MIN_R = 3;
+final int PLANET_MAX_R = 6;
+final int N_PLANETS = 10;
+final int EFFICIENCY_VARIATIONS = 4;
+final int IMPORT_EVERY = 5;
+final float POP_GROWTH_RATE = 0.1;
+final float STARTING_EFFICIENCY = 1.1;
+final float ITERS_PER_YR = 5;
+final float PLANETCELL_MAXPOP = 1000;
+final float EMIGRATION_POP = 300;
+final float N_EMIGRANTS = 20;
+final float INTRA_EMIGRATION_CHANCE = 0.05;
+final float INTER_EMIGRATION_CHANCE = 0.01;
 final color[] RESOURCE_COLORS = {
-    color(128, 128, 128),
-    color(128, 128, 128)
-    //color(0, 255, 0), // FOOD
-    //color(0, 0, 255), // WATER
-    //color(0, 255, 255), // ENERGY
-    //color(255, 0, 0)  // RAW_MATERIALS
+    color(0, 128, 0), // FOOD
+    color(0, 0, 128), // WATER
+    color(0, 128, 128), // ENERGY
+    color(128, 0, 0)  // RAW_MATERIALS
 };
 final int N_RESOURCES = RESOURCE_COLORS.length;
 
-
 // Global Variables
-ArrayList<CargoShip> cargoShips = new ArrayList<CargoShip>();       // Track each CargoShip
-ArrayList<CargoShip> landedCargoShips = new ArrayList<CargoShip>(); // Track landed ships for deletion.
-Planet[] planets = new Planet[N_PLANETS];                        // Store all planets.
-int N_PLANETCELL = 0;                                            // Track number of PlanetCell objects.
+long ITER_CTR = 0; // Used to space out imports (import every n iters rather than every one).
 float CELL_WIDTH, CELL_HEIGHT;
+ArrayList<CargoShip> cargoShips = new ArrayList<CargoShip>();
+ArrayList<CargoShip> landedCargoShips = new ArrayList<CargoShip>();
+Planet[] planets = new Planet[N_PLANETS];
+PlanetCell[] planetCells;
 
-PlanetCell[] planetCells;                                        // Store all PlanetCells. Used to grab PlanetCells with an ID.
+// Graphable global vars
 
-// Graphable global vars.
-
-// UTILITY FUNCTIONS
+// Utility functions
 float clamp(float x, float min, float max) {
     return max(min(x, max), min);
+}
+
+// TODO: BETTER SEED ALGORITHMS
+void seedMooreNeighbourhood(PlanetCell[] cells) {
+    // Add population to a PlanetCell and its Moore neighbourhood.
+    PlanetCell center = cells[int(random(N_PLANETCELL))];
+    Planet planet = center.planet;
+    
+    int[] centerCoords = planet.getCellCoords(center);
+    
+    for (int i = -1; i <= 1; ++i) {
+        for (int j = -1; j <= 1; ++j) {
+            try {
+                planet.cells[centerCoords[0] + i][centerCoords[1] + j].population = random(50, 400);
+            } catch (Exception e) {
+                continue;
+            }
+        }
+    }
 }
 
 void updateCargoShips() {
@@ -51,11 +69,11 @@ void updateCargoShips() {
 void setup() {
     size(800, 800);
     frameRate(FRAME_RATE);
-
+    
     // Compute cell dimensions.
     CELL_WIDTH = (float)width/GRID_WIDTH;
     CELL_HEIGHT = (float)height/GRID_WIDTH;
-
+    
     // Generate planets.
     int[][] planetCoords = new int[N_PLANETS][2];
     for (int i = 0; i < N_PLANETS; ++i) {
@@ -66,6 +84,7 @@ void setup() {
         planetCoords[i][0] = x;
         planetCoords[i][1] = y;
     }
+    
     for (int i = 0; i < N_PLANETS; ++i) {
         int x = planetCoords[i][0];
         int y = planetCoords[i][1];
@@ -88,7 +107,6 @@ void setup() {
         }
         int radius = (int)clamp(random(PLANET_MIN_R, minDist/2), PLANET_MIN_R, PLANET_MAX_R);
         planets[i] = new Planet(x, y, radius);
-        planets[i].seed();
     }
 
     // Initialize planetCells
@@ -102,21 +120,19 @@ void setup() {
             }
         }
     }
-    
-    // TODO: Update .seed() to only seed a couple cells?
-    //planets[0].seed();
+    seedMooreNeighbourhood(planetCells); // Add population to some cells.
 }
 
 void draw() {
     background(7, 10, 20);
     noStroke();
+    
     updateCargoShips();
-    for (Planet planet : planets)
-        planet.update();
-
-    println(planets[4].cells[2][2].population);
-    printArray(planets[4].cells[2][2].resourceStockpile);
-    //println(N_PLANETCELL);
-
-    println();
+    for (PlanetCell cell : planetCells)
+        cell.update();
+    
+    //println(planetCells[100].population);
+    //printArray(planetCells[100].resourceStockpile);
+    //println(ITER_CTR++, cargoShips.size());
+    //println();
 }
