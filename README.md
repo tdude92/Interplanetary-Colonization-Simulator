@@ -1,4 +1,4 @@
-# Cellular-Automata
+# Interplanetary-Colonization-Simulator
 Elon Musk's dream.
 
 This project was created for my ICS4U cellular automaton project, where we were allowed to simulate anything of our choosing.
