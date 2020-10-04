@@ -7,4 +7,4 @@ The main idea behind this simulation is the trading of resources. The simulation
 
 The main file of the project is Interplanetary_Colonization.pde
 
-![Demo GIF]()
+![Demo GIF](https://raw.githubusercontent.com/tdude92/Interplanetary-Colonization-Simulator/master/demo.gif)
