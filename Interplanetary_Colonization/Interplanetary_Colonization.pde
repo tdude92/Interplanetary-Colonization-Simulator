@@ -1,20 +1,18 @@
-// SHARING IS CARING!
-
 // CONSTANTS
 final int FRAME_RATE = 30;
 final int GRID_WIDTH = 400;
 final int PLANET_MIN_R = 2;                  // Minimum radius
 final int PLANET_MAX_R = 7;                  // Maximum radius
-final int N_PLANETS = 20;
-final int EFFICIENCY_VARIATIONS = 4;         // Number of times to shuffle around production multiplier values (Higher value means PlanetCells are more varied in output multipliers).
+final int N_PLANETS = 15;
+final float PMULT_MEAN = 1.1;                  // Mean of production efficiency multipliers. (Eg. 1 unit of population will produce approx. 1*PMULT_MEAN of each resource on average).
+final float PMULT_STDDEV = 0.2;              // Standard deviation of production efficiency multipliers.
 final float POP_GROWTH_RATE = 0.1;           // Per year
-final float STARTING_EFFICIENCY = 1.1;       // The starting value for production multipliers before applying swaps (from EFFICIENCY_VARIATIONS)
-final float ITERS_PER_YR = 4;                // How many iterations amounts to a year.
+final float ITERS_PER_YR = 2;                // How many iterations amounts to a year.
 final float PLANETCELL_MAXPOP = 1000;
 final float EMIGRATION_POP = 300;            // Minimum population of a PlanetCell for emigration to occur.
 final float N_EMIGRANTS = 20;                // Number of emigrants per ColonyShip
 final float INTRA_EMIGRATION_CHANCE = 0.05;  // Chance for intraplanetary emigration.
-final float INTER_EMIGRATION_CHANCE = 0.005; // Chance for interplanetary emigration to occur if intraplanetery emigration fails (due to every cell being populated)
+final float INTER_EMIGRATION_CHANCE = 0.005; // Chance for interplanetary emigration to occur if intraplanetary emigration fails (due to every cell being populated)
 final color[] RESOURCE_COLORS = {            
     color(0, 128, 0), // FOOD
     color(0, 0, 128), // WATER
@@ -24,7 +22,6 @@ final color[] RESOURCE_COLORS = {
 final int N_RESOURCES = RESOURCE_COLORS.length;
 
 // Global Variables
-long ITER_CTR = 0; // TODO: DELETE THIS
 float CELL_WIDTH, CELL_HEIGHT;
 ArrayList<CargoShip> cargoShips = new ArrayList<CargoShip>();
 ArrayList<CargoShip> landedCargoShips = new ArrayList<CargoShip>();  // List of CargoShips to delete after updating each element of cargoShips
@@ -129,4 +126,5 @@ void draw() {
     updateCargoShips();
     for (PlanetCell cell : planetCells)
         cell.update();
+    //println(cargoShips.size()); // Number of CargoShips on screen. The program will run smoothly with up to ~25000 CargoShips.
 }
